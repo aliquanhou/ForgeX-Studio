@@ -1,45 +1,64 @@
 /** Center workspace: Agent 认知渲染层。
  *  把 Runtime 事件流 → 转换成用户能理解的 Agent 工作过程。
+ *  支持 Narrative Compression — 长任务自动折叠同类 Tool/Fact。
  */
 import { useCallback } from 'react'
 import { useStore } from '../stores/runtime'
 import { useInspectorStore } from '../stores/inspector'
-import { AgentStream, useAgentStream } from '../agent-stream/AgentStream'
+import { AgentStream, useCompressedStream } from '../agent-stream/AgentStream'
 import type { AgentMessage, MessageType } from '../agent-stream/MessageTypes'
+import type { NarrativeBlock } from '../stream-compression/types'
 
 export function CenterWorkspace() {
-  const messages = useAgentStream()
+  const items = useCompressedStream()
   const events = useStore((s) => s.events)
   const tasks = useStore((s) => s.tasks)
   const openInspector = useInspectorStore((s) => s.openInspector)
 
   const activeTask = tasks.find((t) => t.isRunning)
 
-  /** 卡片点击 → 打开 Inspector 对应标签 */
+  /** 卡片/块点击 → 打开 Inspector 对应标签 */
   const handleSelect = useCallback(
-    (type: MessageType, id: string) => {
-      // 从消息列表里找完整 payload
-      const msg = messages.find((m) => m.id === id)
-      if (!msg) return
+    (type: string, id: string) => {
+      // 从 items 里找完整数据
+      const item = items.find((m) => m.id === id)
+      if (!item) return
 
-      const tabMap: Partial<Record<MessageType, 'task' | 'decision' | 'world' | 'memory' | 'tools' | 'plugins'>> = {
-        tool: 'tools',
-        decision: 'decision',
-        world_update: 'world',
-        artifact: 'world',
-        intent: 'decision',
-        plan: 'task',
-        completion: 'task',
+      if ('childIds' in item) {
+        // NarrativeBlock
+        const block = item as NarrativeBlock
+        const tabMap: Record<string, 'task' | 'decision' | 'world' | 'tools'> = {
+          tool_group: 'tools',
+          fact_group: 'world',
+          phase_summary: 'task',
+        }
+        openInspector({
+          type: type as any,
+          id,
+          payload: block.meta,
+          tab: tabMap[block.type] || 'task',
+        })
+      } else {
+        // AgentMessage
+        const msg = item as AgentMessage
+        const tabMap: Record<string, 'task' | 'decision' | 'world' | 'tools'> = {
+          tool: 'tools',
+          decision: 'decision',
+          world_update: 'world',
+          artifact: 'world',
+          intent: 'decision',
+          plan: 'task',
+          completion: 'task',
+        }
+        openInspector({
+          type: type as any,
+          id,
+          payload: msg.data,
+          tab: tabMap[msg.type] || 'task',
+        })
       }
-
-      openInspector({
-        type,
-        id,
-        payload: msg.data,
-        tab: tabMap[type] || 'task',
-      })
     },
-    [messages, openInspector],
+    [items, openInspector],
   )
 
   /* ── Welcome empty state ────────────────────────────── */
@@ -84,14 +103,19 @@ export function CenterWorkspace() {
     )
   }
 
-  /* ── Agent Stream ───────────────────────────────────── */
+  /* ── Compressed Agent Stream ────────────────────────── */
   return (
     <div className="flex-1 flex flex-col overflow-hidden bg-surface-950">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-2 bg-surface-900/30 border-b border-surface-800 shrink-0">
         <div className="flex items-center gap-2">
           <span className="text-xs font-semibold text-surface-300">Agent Workspace</span>
-          <span className="text-2xs text-surface-600">{messages.length} 条消息</span>
+          <span className="text-2xs text-surface-600">
+            {items.length} 个叙事节点
+            <span className="text-surface-700 ml-1">
+              (原始 {events.length} 事件)
+            </span>
+          </span>
         </div>
         {activeTask && (
           <div className="flex items-center gap-1.5">
@@ -101,8 +125,8 @@ export function CenterWorkspace() {
         )}
       </div>
 
-      {/* Agent thought stream */}
-      <AgentStream messages={messages} onSelect={handleSelect} />
+      {/* Compressed narrative stream */}
+      <AgentStream items={items} onSelect={handleSelect} />
     </div>
   )
 }
