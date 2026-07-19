@@ -1,18 +1,14 @@
-/** Center workspace: agent activity stream with welcome empty state. */
-import { useEffect, useRef } from 'react'
+/** Center workspace: Agent 认知渲染层。
+ *  把 Runtime 事件流 → 转换成用户能理解的 Agent 工作过程。
+ */
 import { useStore } from '../stores/runtime'
-import { ActivityCard } from '../stream/ActivityCard'
+import { AgentStream, useAgentStream } from '../agent-stream/AgentStream'
 
 export function CenterWorkspace() {
+  const messages = useAgentStream()
   const events = useStore((s) => s.events)
   const tasks = useStore((s) => s.tasks)
-  const bottomRef = useRef<HTMLDivElement>(null)
 
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [events.length])
-
-  const visible = events.slice(-100)
   const activeTask = tasks.find((t) => t.isRunning)
 
   /* ── Welcome empty state ────────────────────────────── */
@@ -57,18 +53,14 @@ export function CenterWorkspace() {
     )
   }
 
-  /* ── Stream view ────────────────────────────────────── */
+  /* ── Agent Stream ───────────────────────────────────── */
   return (
     <div className="flex-1 flex flex-col overflow-hidden bg-surface-950">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-2 bg-surface-900/30 border-b border-surface-800 shrink-0">
         <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold text-surface-300">
-            Agent Workspace
-          </span>
-          <span className="text-2xs text-surface-600">
-            {visible.length} events
-          </span>
+          <span className="text-xs font-semibold text-surface-300">Agent Workspace</span>
+          <span className="text-2xs text-surface-600">{messages.length} 条消息</span>
         </div>
         {activeTask && (
           <div className="flex items-center gap-1.5">
@@ -78,17 +70,8 @@ export function CenterWorkspace() {
         )}
       </div>
 
-      {/* Event feed */}
-      <div className="flex-1 overflow-auto">
-        {visible.map((ev, idx) => (
-          <ActivityCard
-            key={ev.event_id}
-            event={ev}
-            isLatest={idx === visible.length - 1}
-          />
-        ))}
-        <div ref={bottomRef} />
-      </div>
+      {/* Agent thought stream */}
+      <AgentStream messages={messages} />
     </div>
   )
 }
