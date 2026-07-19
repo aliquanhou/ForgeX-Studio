@@ -68,9 +68,10 @@ export function ForgeShell() {
 
       try {
         abortMockStream()
-        disconnect()
-        useStore.setState({ events: [], tasks: [], selectedTaskId: null })
+        // Don't clear history — keep previous events for conversation continuity
+        const prevTaskId = useStore.getState().selectedTaskId
 
+        // Insert user message
         addEvent({
           kind: 'user_message',
           task_id: uid(),
@@ -79,7 +80,17 @@ export function ForgeShell() {
           payload: { message, mode },
         })
 
+        // Disconnect old SSE if any, keep events intact
+        disconnect()
+
         const result = await createTask(message)
+        addEvent({
+          kind: 'task_started',
+          task_id: result.task_id,
+          event_id: uid(),
+          timestamp: new Date().toISOString(),
+          payload: { goal: message, intent: mode, intent_confidence: 0.9 },
+        })
         connect(result.task_id)
       } catch (e) {
         console.warn('Runtime unavailable, using mock fallback:', e)
