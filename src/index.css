@@ -1,0 +1,26 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * { @apply border-surface-700; }
+  body { @apply bg-surface-950 text-surface-200 font-sans antialiased; }
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { @apply bg-transparent; }
+  ::-webkit-scrollbar-thumb { @apply bg-surface-700 rounded-full; }
+}
+
+.panel-header { @apply flex items-center gap-2 px-3 py-2 text-xs font-semibold uppercase tracking-wider text-surface-400 bg-surface-900 border-b select-none; }
+.panel-body { @apply flex-1 overflow-auto p-3; }
+.timeline-node { @apply relative pl-6 pb-4 border-l-2 border-surface-700 last:pb-0; }
+.timeline-node::before { @apply absolute -left-[5px] top-1 w-2 h-2 rounded-full bg-surface-600 content-['']; }
+.timeline-node.active::before { @apply bg-accent-500 shadow-[0_0_6px_rgba(99,102,241,0.5)]; }
+.timeline-node.error::before { @apply bg-error; }
+.data-row { @apply flex items-start gap-2 py-1 text-xs; }
+.data-label { @apply text-surface-500 w-24 shrink-0 font-medium; }
+.data-value { @apply text-surface-200 font-mono; }
+.badge { @apply inline-flex items-center px-1.5 py-0.5 text-2xs font-medium rounded; }
+.badge-success { @apply bg-success/10 text-success; }
+.badge-warning { @apply bg-warning/10 text-warning; }
+.badge-error { @apply bg-error/10 text-error; }
+.badge-info { @apply bg-info/10 text-info; }
