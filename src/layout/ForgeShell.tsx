@@ -22,7 +22,6 @@ import { TopBar } from '../components/TopBar'
 import { LeftSidebar } from '../components/LeftSidebar'
 import { CenterWorkspace } from '../components/CenterWorkspace'
 import { RightInspector } from '../components/RightInspector'
-import { UserInput } from '../components/UserInput'
 import { StatusBar } from '../components/StatusBar'
 import { abortMockStream, useMockStream } from '../mock/stream'
 import { getHealth, createTask } from '../api/forge'
@@ -68,12 +67,10 @@ export function ForgeShell() {
       if (!message.trim()) return
 
       try {
-        // Reset previous state
         abortMockStream()
         disconnect()
         useStore.setState({ events: [], tasks: [], selectedTaskId: null })
 
-        // Always insert user message first (optimistic UI)
         addEvent({
           kind: 'user_message',
           task_id: uid(),
@@ -82,15 +79,10 @@ export function ForgeShell() {
           payload: { message, mode },
         })
 
-        // Try real Runtime API
         const result = await createTask(message)
-
-        // Connect SSE for live event stream
         connect(result.task_id)
       } catch (e) {
         console.warn('Runtime unavailable, using mock fallback:', e)
-
-        // Fallback: local mock task with user's actual goal
         const taskId = uid()
         addEvent({
           kind: 'task_started',
@@ -113,19 +105,13 @@ export function ForgeShell() {
         onToggleRight={() => setRightOpen((v) => !v)}
       />
 
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Three-column content area */}
-        <div className="flex-1 flex overflow-hidden">
-          <LeftSidebar collapsed={!leftOpen} />
-          <CenterWorkspace />
-          <RightInspector
-            collapsed={!rightOpen}
-            onToggle={() => setRightOpen(false)}
-          />
-        </div>
-
-        {/* User input */}
-        <UserInput onSend={handleSend} />
+      <div className="flex-1 flex overflow-hidden">
+        <LeftSidebar collapsed={!leftOpen} />
+        <CenterWorkspace onSend={handleSend} />
+        <RightInspector
+          collapsed={!rightOpen}
+          onToggle={() => setRightOpen(false)}
+        />
       </div>
 
       <StatusBar />

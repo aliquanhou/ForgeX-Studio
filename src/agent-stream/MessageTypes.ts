@@ -2,6 +2,7 @@
 
 export type MessageType =
   | 'user_message'  // 用户输入
+  | 'agent_response' // Agent回复（完整内容）
   | 'intent'        // 意图分类
   | 'plan'          // 计划生成
   | 'thought'       // 思考/推理过程

@@ -1,31 +1,33 @@
-/** Center workspace: Agent 认知渲染层。
- *  把 Runtime 事件流 → 转换成用户能理解的 Agent 工作过程。
- *  支持 Narrative Compression — 长任务自动折叠同类 Tool/Fact。
+/** Center workspace: Agent 认知渲染层 + User Input.
+ *  瀑布流展示 Agent 工作过程，底部对齐输入栏。
  */
 import { useCallback } from 'react'
 import { useStore } from '../stores/runtime'
 import { useInspectorStore } from '../stores/inspector'
 import { AgentStream, useCompressedStream } from '../agent-stream/AgentStream'
+import { UserInput } from './UserInput'
 import type { AgentMessage, MessageType } from '../agent-stream/MessageTypes'
 import type { NarrativeBlock } from '../stream-compression/types'
 
-export function CenterWorkspace() {
+interface CenterWorkspaceProps {
+  onSend: (message: string, mode: string) => void
+}
+
+export function CenterWorkspace({ onSend }: CenterWorkspaceProps) {
   const items = useCompressedStream()
   const events = useStore((s) => s.events)
   const tasks = useStore((s) => s.tasks)
   const openInspector = useInspectorStore((s) => s.openInspector)
 
   const activeTask = tasks.find((t) => t.isRunning)
+  const hasContent = events.length > 0
 
-  /** 卡片/块点击 → 打开 Inspector 对应标签 */
   const handleSelect = useCallback(
     (type: string, id: string) => {
-      // 从 items 里找完整数据
       const item = items.find((m) => m.id === id)
       if (!item) return
 
       if ('childIds' in item) {
-        // NarrativeBlock
         const block = item as NarrativeBlock
         const tabMap: Record<string, 'task' | 'decision' | 'world' | 'tools'> = {
           tool_group: 'tools',
@@ -33,13 +35,11 @@ export function CenterWorkspace() {
           phase_summary: 'task',
         }
         openInspector({
-          type: type as any,
-          id,
+          type: type as any, id,
           payload: block.meta,
           tab: tabMap[block.type] || 'task',
         })
       } else {
-        // AgentMessage
         const msg = item as AgentMessage
         const tabMap: Record<string, 'task' | 'decision' | 'world' | 'tools'> = {
           tool: 'tools',
@@ -51,8 +51,7 @@ export function CenterWorkspace() {
           completion: 'task',
         }
         openInspector({
-          type: type as any,
-          id,
+          type: type as any, id,
           payload: msg.data,
           tab: tabMap[msg.type] || 'task',
         })
@@ -62,48 +61,42 @@ export function CenterWorkspace() {
   )
 
   /* ── Welcome empty state ────────────────────────────── */
-  if (events.length === 0) {
+  if (!hasContent) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-surface-950">
-        <div className="text-center space-y-6 max-w-md px-6">
-          <div className="w-16 h-16 mx-auto rounded-2xl bg-accent-600/10 border border-accent-500/20 flex items-center justify-center">
-            <span className="text-3xl">⚡</span>
-          </div>
-
-          <div>
-            <h2 className="text-lg font-semibold text-surface-200 mb-1">
-              ForgeX Studio
-            </h2>
-            <p className="text-sm text-surface-500">AI Engineering Command Center</p>
-          </div>
-
-          <div className="space-y-3">
-            <p className="text-xs text-surface-500">输入任务开始，或试试以下示例：</p>
-            <div className="flex flex-wrap justify-center gap-2">
-              {['分析项目架构', '优化性能瓶颈', '生成测试报告', '重构核心模块'].map(
-                (s) => (
-                  <button
-                    key={s}
+      <div className="flex-1 flex flex-col bg-surface-950">
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center space-y-6 max-w-md px-6">
+            <div className="w-16 h-16 mx-auto rounded-2xl bg-accent-600/10 border border-accent-500/20 flex items-center justify-center">
+              <span className="text-3xl">⚡</span>
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-surface-200 mb-1">ForgeX Studio</h2>
+              <p className="text-sm text-surface-500">AI Engineering Command Center</p>
+            </div>
+            <div className="space-y-3">
+              <p className="text-xs text-surface-500">输入任务开始，或试试以下示例：</p>
+              <div className="flex flex-wrap justify-center gap-2">
+                {['分析项目架构', '优化性能瓶颈', '生成测试报告', '重构核心模块'].map((s) => (
+                  <button key={s}
                     className="px-3 py-1.5 text-xs text-surface-400 bg-surface-800/50 hover:bg-surface-800 border border-surface-700/50 rounded-lg transition-colors"
-                  >
-                    {s}
-                  </button>
-                ),
-              )}
+                    onClick={() => onSend(s, 'auto')}
+                  >{s}</button>
+                ))}
+              </div>
+            </div>
+            <div className="flex items-center gap-4 text-2xs text-surface-700">
+              <span>Cmd+K 命令面板</span>
+              <span>Cmd+Enter 发送</span>
+              <span>Tab 切换面板</span>
             </div>
           </div>
-
-          <div className="flex items-center gap-4 text-2xs text-surface-700">
-            <span>⌘K 命令面板</span>
-            <span>⌘↵ 发送</span>
-            <span>Tab 切换面板</span>
-          </div>
         </div>
+        <UserInput onSend={onSend} />
       </div>
     )
   }
 
-  /* ── Compressed Agent Stream ────────────────────────── */
+  /* ── Agent Stream + UserInput ───────────────────────── */
   return (
     <div className="flex-1 flex flex-col overflow-hidden bg-surface-950">
       {/* Header */}
@@ -111,10 +104,8 @@ export function CenterWorkspace() {
         <div className="flex items-center gap-2">
           <span className="text-xs font-semibold text-surface-300">Agent Workspace</span>
           <span className="text-2xs text-surface-600">
-            {items.length} 个叙事节点
-            <span className="text-surface-700 ml-1">
-              (原始 {events.length} 事件)
-            </span>
+            {items.length} 叙事节点
+            <span className="text-surface-700 ml-1">(原始 {events.length} 事件)</span>
           </span>
         </div>
         {activeTask && (
@@ -125,8 +116,11 @@ export function CenterWorkspace() {
         )}
       </div>
 
-      {/* Compressed narrative stream */}
+      {/* Waterfall stream — fills remaining space */}
       <AgentStream items={items} onSelect={handleSelect} />
+
+      {/* User input — only in center column */}
+      <UserInput onSend={onSend} />
     </div>
   )
 }
