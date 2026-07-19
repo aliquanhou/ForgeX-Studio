@@ -1,56 +1,66 @@
 # ForgeX Studio
 
-**Local Development Console for ForgeX Agent OS**
+**AI Engineering Command Center**
 
-ForgeX Studio 不是聊天 UI。它是一个用于运行、观察、调试、扩展 ForgeX Runtime 的 IDE 类前端平台。
+ForgeX Studio 是一个 Agent IDE，为 ForgeX Runtime 提供类 Claude Code / Cursor 的交互界面。
+
+## Layout
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ TopBar: 项目 / 任务导航            ● Runtime状态  设置       │
+├──────┬─────────────────────────┬────────────────────────────┤
+│      │                         │                            │
+│ Left │   CenterWorkspace       │  RightInspector            │
+│Sidebar│   (Agent 活动流)        │  (6个标签: 任务/决策/世界/  │
+│      │                         │   记忆/工具/插件)           │
+│ 项目 │   💬 用户对话气泡         │                            │
+│ 任务  │   ▶ Task 执行追踪        │                            │
+│ 插件  │   ⚡ 工具调用记录         │                            │
+├──────┴─────────────────────────┴────────────────────────────┤
+│ UserInput: [文本输入区]  [📎附件] [对话▼] [▶ 执行]            │
+│           快速: 分析架构 修复Bug 生成文档 重构代码              │
+├─────────────────────────────────────────────────────────────┤
+│ StatusBar: ●Runtime在线 | 任务:... | 阶段:EXECUTE | EVI | ✅ │
+└─────────────────────────────────────────────────────────────┘
+```
 
 ## Architecture
 
 ```
 ForgeX Studio (React + Vite + TypeScript)
     │
-    ├── Runtime Timeline      ← 实时事件流
-    ├── Decision Inspector    ← 决策引擎状态
-    ├── World Model Viewer    ← 知识图谱可视化
-    ├── Memory Console        ← 四层记忆面板
-    ├── Tool Execution        ← 工具调用追踪
-    ├── Artifact / Diff       ← 变更审阅
-    └── Plugin Manager        ← 扩展管理
+    ├── TopBar           ← 导航、Runtime 状态
+    ├── LeftSidebar      ← 项目文件、任务历史、插件
+    ├── CenterWorkspace  ← Agent 活动流（核心工作区）
+    ├── RightInspector   ← 智能控制中心（6 标签页）
+    ├── UserInput        ← 增强输入框（模式选择、附件）
+    └── StatusBar        ← 紧凑指标栏
     │
     └── SSE ──── ForgeX Runtime (FastAPI)
 ```
 
-## 7 Panels
+## Modes
 
-| Panel | 用途 |
-|-------|------|
-| **Runtime Timeline** | 显示任务全生命周期 events |
-| **Decision Inspector** | EVI 指标、Knowledge Coverage、决策理由 |
-| **World Model Viewer** | Facts、架构层、影响分析 |
-| **Memory Console** | 四层记忆状态 |
-| **Tool Execution** | 工具调用实时追踪 |
-| **Artifact / Diff** | 制品生命周期、变更对比 |
-| **Plugin Manager** | 内核信息、插件安装管理 |
+| 模式 | 用途 |
+|------|------|
+| **对话** | 普通交互模式 |
+| **分析** | 专注代码/项目分析 |
+| **编程** | 编码任务优先 |
+| **自动执行** | 全自动执行 |
+| **Debug** | 调试 Runtime |
+| **World Model** | 世界模型可视化 |
+| **Runtime控制** | 内核级别控制 |
+| **Plugin开发** | 插件开发模式 |
 
 ## Quick Start
 
 ```bash
-# Install dependencies
 npm install
-
-# Development server (proxies /api to ForgeX runtime)
-npm run dev
-
-# Production build
-npm run build
+npm run dev        # 开发服务器 -> http://localhost:5174
+npm run build      # 生产构建
+npm run preview    # 预览构建产物
 ```
-
-## Design
-
-- **Event-Driven UI**: Runtime 通过 SSE 推送 events，UI 自动更新
-- **No polling**: 前端不轮询，完全被动接收
-- **Panel-based layout**: 7 个独立面板，可自由开关组合
-- **Dark theme**: 深色主题，专注代码操作
 
 ## Stack
 
