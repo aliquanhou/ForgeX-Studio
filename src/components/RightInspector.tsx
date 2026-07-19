@@ -105,6 +105,9 @@ function DetailContent() {
     plan: '计划详情',
     intent: '意图详情',
     completion: '任务结果',
+    tool_group: '工具组详情',
+    fact_group: '事实聚合详情',
+    phase_summary: '阶段摘要',
   }
 
   return (
@@ -131,6 +134,9 @@ function DetailContent() {
       {selectedType === 'plan' && <PlanDetail payload={payload} />}
       {selectedType === 'intent' && <IntentDetail payload={payload} />}
       {selectedType === 'completion' && <CompletionDetail payload={payload} />}
+      {selectedType === 'tool_group' && <ToolGroupDetail payload={payload} />}
+      {selectedType === 'fact_group' && <FactGroupDetail payload={payload} />}
+      {selectedType === 'phase_summary' && <PhaseSummaryDetail payload={payload} />}
       {!selectedType && (
         <div className="text-2xs text-surface-600 text-center py-8">
           点击 Stream 中的卡片查看详情
@@ -569,6 +575,102 @@ function DecisionTab() {
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+/* ══════════════════════════════════════════════════════
+   压缩块详情组件（NarrativeBlock details）
+   ══════════════════════════════════════════════════════ */
+
+function ToolGroupDetail({ payload }: { payload: Record<string, unknown> | null }) {
+  if (!payload) return null
+  const count = payload.count as number | undefined
+  const topTool = payload.topTool as string | undefined
+  const targets = payload.targets as string[] | undefined
+  const avgEvi = payload.avgEvi as number | undefined
+  const totalDuration = payload.totalDuration as number | undefined
+
+  return (
+    <div className="space-y-2">
+      <DataField label="工具数" value={count ?? 0} mono highlight />
+      {topTool && <DataField label="主要工具" value={topTool} mono />}
+      {targets && targets.length > 0 && (
+        <div className="bg-surface-900/30 rounded p-2">
+          <div className="text-2xs text-surface-500 mb-0.5">目标文件 ({targets.length})</div>
+          <div className="space-y-0.5">
+            {targets.map((t, i) => (
+              <div key={i} className="text-xs text-surface-400 font-mono">· {t}</div>
+            ))}
+          </div>
+        </div>
+      )}
+      {avgEvi !== undefined && <DataField label="平均 EVI" value={avgEvi.toFixed(2)} mono color="text-info" />}
+      {totalDuration !== undefined && <DataField label="总耗时" value={`${totalDuration.toFixed(0)}ms`} mono />}
+    </div>
+  )
+}
+
+function FactGroupDetail({ payload }: { payload: Record<string, unknown> | null }) {
+  if (!payload) return null
+  const count = payload.count as number | undefined
+  const entities = payload.entities as string[] | undefined
+  const sources = payload.sources as string[] | undefined
+  const avgConfidence = payload.avgConfidence as number | undefined
+
+  return (
+    <div className="space-y-2">
+      <DataField label="事实数" value={count ?? 0} mono highlight />
+      {entities && entities.length > 0 && (
+        <div className="bg-surface-900/30 rounded p-2">
+          <div className="text-2xs text-surface-500 mb-0.5">实体 ({entities.length})</div>
+          <div className="flex flex-wrap gap-1">
+            {entities.map((e, i) => (
+              <span key={i} className="badge badge-info text-2xs">{e}</span>
+            ))}
+          </div>
+        </div>
+      )}
+      {avgConfidence !== undefined && <DataField label="平均置信度" value={`${(avgConfidence * 100).toFixed(0)}%`} color="text-success" />}
+      {sources && sources.length > 0 && <DataField label="来源" value={sources.join(', ')} />}
+    </div>
+  )
+}
+
+function PhaseSummaryDetail({ payload }: { payload: Record<string, unknown> | null }) {
+  if (!payload) return null
+  const fromPhase = payload.fromPhase as string | undefined
+  const toPhase = payload.toPhase as string | undefined
+  const toolCount = payload.toolCount as number | undefined
+  const toolTypes = payload.toolTypes as string[] | undefined
+  const factCount = payload.factCount as number | undefined
+  const avgEvi = payload.avgEvi as number | undefined
+  const errorCount = payload.errorCount as number | undefined
+  const decisionCount = payload.decisionCount as number | undefined
+
+  return (
+    <div className="space-y-2">
+      <DataField label="阶段" value={`${fromPhase || ''} → ${toPhase || ''}`.toUpperCase()} highlight />
+      <div className="bg-surface-900/30 rounded p-2">
+        <div className="text-2xs text-surface-500 mb-1">阶段统计</div>
+        <div className="grid grid-cols-2 gap-1 text-2xs">
+          {toolCount !== undefined && <span>工具: <span className="text-surface-300 font-mono">{toolCount}</span></span>}
+          {factCount !== undefined && <span>事实: <span className="text-surface-300 font-mono">{factCount}</span></span>}
+          {decisionCount !== undefined && <span>决策: <span className="text-surface-300 font-mono">{decisionCount}</span></span>}
+          {errorCount !== undefined && errorCount > 0 && <span>错误: <span className="text-error font-mono">{errorCount}</span></span>}
+        </div>
+      </div>
+      {toolTypes && toolTypes.length > 0 && (
+        <div className="bg-surface-900/30 rounded p-2">
+          <div className="text-2xs text-surface-500 mb-0.5">使用工具</div>
+          <div className="flex flex-wrap gap-1">
+            {toolTypes.map((t, i) => (
+              <span key={i} className="px-1.5 py-0.5 text-2xs bg-surface-800 text-surface-400 rounded">{t}</span>
+            ))}
+          </div>
+        </div>
+      )}
+      {avgEvi !== undefined && <DataField label="平均 EVI" value={avgEvi.toFixed(2)} mono color="text-info" />}
     </div>
   )
 }

@@ -4,11 +4,14 @@ import type { AgentMessage, MessageType } from '../agent-stream/MessageTypes'
 
 export type InspectorTab = 'task' | 'decision' | 'world' | 'memory' | 'tools' | 'plugins'
 
+/** 选中类型可以是 AgentMessage 的 type 或 NarrativeBlock 的 BlockType */
+export type SelectedType = MessageType | 'tool_group' | 'fact_group' | 'phase_summary'
+
 interface InspectorState {
   /** 当前选中的消息 ID */
   selectedMessageId: string | null
   /** 当前选中的消息类型 */
-  selectedType: MessageType | null
+  selectedType: SelectedType | null
   /** 当前选中的消息 payload */
   payload: Record<string, unknown> | null
   /** 当前激活的标签页 */
@@ -18,7 +21,7 @@ interface InspectorState {
 
   /** 打开 Inspector 并跳转到指定标签 */
   openInspector: (opts: {
-    type: MessageType
+    type: SelectedType
     id: string
     payload: Record<string, unknown>
     tab: InspectorTab
