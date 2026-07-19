@@ -1,6 +1,9 @@
-/** Top bar: project/task navigation, runtime status, settings. */
+/** Top bar: project/task navigation, runtime status, settings.
+ *  v0.3.3: includes ControlBar when task is active.
+ */
 import { useStore } from '../stores/runtime'
 import { Settings, ChevronDown } from 'lucide-react'
+import { ControlBar } from './ControlBar'
 
 interface TopBarProps {
   leftOpen: boolean
@@ -12,15 +15,25 @@ interface TopBarProps {
 export function TopBar({ leftOpen, rightOpen, onToggleLeft, onToggleRight }: TopBarProps) {
   const events = useStore((s) => s.events)
   const tasks = useStore((s) => s.tasks)
+  const mode = useStore((s) => s.mode)
+  const paused = useStore((s) => s.paused)
+  const humanOverride = useStore((s) => s.humanOverride)
 
   const activeTasks = tasks.filter((t) => t.isRunning).length
+  const hasControl = paused || humanOverride
+
+  const modeLabel: Record<string, string> = {
+    autonomous: '🟢 Autonomous',
+    observe: '🟡 Observe',
+    governed: '🔴 Governed',
+  }
 
   return (
     <header className="shrink-0 bg-surface-900 border-b border-surface-800 select-none">
+      {/* ── Title row ──────────────────────────────── */}
       <div className="flex items-center justify-between px-3 h-10">
-        {/* ── Left: logo + nav ───────────────────────────── */}
+        {/* Left: logo + nav */}
         <div className="flex items-center gap-2">
-          {/* Sidebar toggle */}
           <button
             onClick={onToggleLeft}
             className={`w-7 h-7 rounded flex items-center justify-center transition-colors ${
@@ -37,7 +50,7 @@ export function TopBar({ leftOpen, rightOpen, onToggleLeft, onToggleRight }: Top
             F
           </div>
           <span className="text-sm font-semibold text-surface-100">ForgeX Studio</span>
-          <span className="text-2xs text-surface-500">v0.2</span>
+          <span className="text-2xs text-surface-500">v0.3</span>
 
           <div className="h-4 w-px bg-surface-700 mx-1" />
 
@@ -51,29 +64,35 @@ export function TopBar({ leftOpen, rightOpen, onToggleLeft, onToggleRight }: Top
           </div>
         </div>
 
-        {/* ── Right: status + actions ────────────────────── */}
+        {/* Right: status + actions */}
         <div className="flex items-center gap-3">
-          {/* Runtime status indicator */}
+          {/* Runtime status */}
           <div className="flex items-center gap-1.5">
             <div
               className={`w-1.5 h-1.5 rounded-full ${
                 events.length > 0
-                  ? 'bg-success animate-pulse shadow-[0_0_4px_rgba(34,197,94,0.5)]'
+                  ? hasControl
+                    ? 'bg-warning animate-pulse shadow-[0_0_4px_rgba(245,158,11,0.5)]'
+                    : 'bg-success animate-pulse shadow-[0_0_4px_rgba(34,197,94,0.5)]'
                   : 'bg-surface-600'
               }`}
             />
-            <span className="text-2xs text-surface-500">{events.length > 0 ? 'Active' : 'Idle'}</span>
+            <span className="text-2xs text-surface-500">
+              {humanOverride ? '接管' : paused ? '暂停' : events.length > 0 ? '活跃' : '空闲'}
+            </span>
           </div>
 
+          {/* Mode badge */}
+          {events.length > 0 && (
+            <span className="text-2xs text-surface-500">{modeLabel[mode] || mode}</span>
+          )}
+
           {activeTasks > 0 && (
-            <span className="text-2xs text-surface-500">
-              {activeTasks} task{activeTasks !== 1 ? 's' : ''}
-            </span>
+            <span className="text-2xs text-surface-500">{activeTasks} 任务</span>
           )}
 
           <div className="h-4 w-px bg-surface-700" />
 
-          {/* Inspector toggle */}
           <button
             onClick={onToggleRight}
             className={`w-7 h-7 rounded flex items-center justify-center transition-colors ${
@@ -94,6 +113,9 @@ export function TopBar({ leftOpen, rightOpen, onToggleLeft, onToggleRight }: Top
           </button>
         </div>
       </div>
+
+      {/* ── Control bar row ───────────────────────── */}
+      <ControlBar />
     </header>
   )
 }

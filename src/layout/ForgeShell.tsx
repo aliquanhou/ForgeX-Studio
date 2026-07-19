@@ -25,6 +25,7 @@ import { RightInspector } from '../components/RightInspector'
 import { UserInput } from '../components/UserInput'
 import { StatusBar } from '../components/StatusBar'
 import { abortMockStream, useMockStream } from '../mock/stream'
+import { getHealth, createTask } from '../api/forge'
 
 let _id_seq = 0
 function uid(): string {
@@ -45,19 +46,17 @@ export function ForgeShell() {
 
   useEffect(() => {
     let cancelled = false
-    import('../api/forge').then(({ getHealth }) => {
-      getHealth()
-        .then(() => {
-          if (!cancelled) setRuntimeAvail(true)
-        })
-        .catch(() => {
-          if (!cancelled) {
-            setRuntimeAvail(false)
-            // Runtime not available — show demo on welcome screen
-            useStore.setState({ events: [], tasks: [] })
-          }
-        })
-    })
+    getHealth()
+      .then(() => {
+        if (!cancelled) setRuntimeAvail(true)
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setRuntimeAvail(false)
+          // Runtime not available — show demo on welcome screen
+          useStore.setState({ events: [], tasks: [] })
+        }
+      })
     return () => { cancelled = true }
   }, [])
 
@@ -84,7 +83,6 @@ export function ForgeShell() {
         })
 
         // Try real Runtime API
-        const { createTask } = await import('../api/forge')
         const result = await createTask(message)
 
         // Connect SSE for live event stream

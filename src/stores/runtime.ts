@@ -17,6 +17,8 @@ export interface TaskState {
   success: boolean | null
 }
 
+type RuntimeMode = 'autonomous' | 'observe' | 'governed'
+
 interface RuntimeState {
   tasks: TaskState[]
   events: ForgeEvent[]
@@ -27,11 +29,21 @@ interface RuntimeState {
   // Panels visibility
   visiblePanels: Record<string, boolean>
 
+  // v0.3.3 Autonomous Control Layer
+  paused: boolean
+  humanOverride: boolean
+  mode: RuntimeMode
+
   addEvent: (event: ForgeEvent) => void
   setSelectedTask: (id: string | null) => void
   connect: (taskId?: string) => void
   disconnect: () => void
   togglePanel: (panel: string) => void
+
+  // v0.3.3 Control actions
+  setPaused: (paused: boolean) => void
+  setHumanOverride: (override: boolean) => void
+  setMode: (mode: RuntimeMode) => void
 }
 
 export const useStore = create<RuntimeState>((set, get) => ({
@@ -49,6 +61,9 @@ export const useStore = create<RuntimeState>((set, get) => ({
     artifact: false,
     plugins: false,
   },
+  paused: false,
+  humanOverride: false,
+  mode: 'autonomous',
 
   addEvent: (event) => {
     set((state) => ({
@@ -89,6 +104,36 @@ export const useStore = create<RuntimeState>((set, get) => ({
         ),
       }))
     }
+
+    // v0.3.3 Control events
+    switch (event.kind) {
+      case 'runtime_paused':
+        set({ paused: true })
+        break
+      case 'runtime_resumed':
+        set({ paused: false, humanOverride: false })
+        break
+      case 'human_override_started':
+        set({ paused: true, humanOverride: true })
+        break
+      case 'human_override_ended':
+        set({ paused: false, humanOverride: false })
+        break
+      case 'runtime_stopped':
+        set((s) => ({
+          paused: false,
+          humanOverride: false,
+          tasks: s.tasks.map((t) =>
+            t.taskId === event.task_id
+              ? { ...t, isRunning: false, success: false }
+              : t
+          ),
+        }))
+        break
+      case 'mode_changed':
+        set({ mode: (event.payload.to as RuntimeMode) || 'autonomous' })
+        break
+    }
   },
 
   setSelectedTask: (id) => set({ selectedTaskId: id }),
@@ -99,7 +144,6 @@ export const useStore = create<RuntimeState>((set, get) => ({
       state.eventSource.close()
     }
 
-    // Connect directly to Runtime (not via Vite proxy) to avoid SSE proxy issues
     const base = 'http://localhost:5173/api'
     const url = taskId ? `${base}/tasks/${taskId}/events` : `${base}/tasks/events`
     const es = new EventSource(url)
@@ -117,9 +161,6 @@ export const useStore = create<RuntimeState>((set, get) => ({
       } catch { /* ignore parse errors */ }
     }
 
-    // Don't call es.close() on error — EventSource auto-reconnects.
-    // Only update state if this EventSource is still the current one,
-    // guarding against stale callbacks from a previously-disconnected ES.
     es.onerror = () => {
       if (get().eventSource === es) {
         set({ isConnected: false })
@@ -139,4 +180,8 @@ export const useStore = create<RuntimeState>((set, get) => ({
     set((state) => ({
       visiblePanels: { ...state.visiblePanels, [panel]: !state.visiblePanels[panel] },
     })),
+
+  setPaused: (paused) => set({ paused }),
+  setHumanOverride: (override) => set({ humanOverride: override }),
+  setMode: (mode) => set({ mode }),
 }))
