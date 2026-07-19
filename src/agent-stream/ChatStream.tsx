@@ -37,15 +37,22 @@ export function useChatMessages(): ChatMessage[] {
           const fact = (ev.payload.fact as string) || ''
           const isFinal = ev.payload.is_final as boolean
           const source = (ev.payload.source as string) || ''
+          const isStreaming = ev.payload.is_streaming as boolean
           if (isFinal || source === 'llm') {
-            // Agent's final response — show as agent message
-            msgs.push({
-              id: ev.event_id,
-              role: 'agent',
-              content: fact,
-              timestamp: ev.timestamp,
-              metadata: { confidence: ev.payload.confidence as number },
-            })
+            if (isStreaming && msgs.length > 0 && msgs[msgs.length - 1].role === 'agent') {
+              // Streaming chunk — replace last agent message (immutable update)
+              const last = msgs[msgs.length - 1]
+              msgs[msgs.length - 1] = { ...last, content: fact, timestamp: ev.timestamp }
+            } else {
+              // Final response or first chunk — push new agent message
+              msgs.push({
+                id: ev.event_id,
+                role: 'agent',
+                content: fact,
+                timestamp: ev.timestamp,
+                metadata: { confidence: ev.payload.confidence as number },
+              })
+            }
           } else {
             // Intermediate fact — show as compact system note
             msgs.push({
