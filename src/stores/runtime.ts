@@ -95,23 +95,35 @@ export const useStore = create<RuntimeState>((set, get) => ({
 
   connect: (taskId) => {
     const state = get()
-    state.disconnect()
+    if (state.eventSource) {
+      state.eventSource.close()
+    }
 
-    const url = taskId ? `/api/tasks/${taskId}/events` : '/api/tasks/events'
+    // Connect directly to Runtime (not via Vite proxy) to avoid SSE proxy issues
+    const base = 'http://localhost:5173/api'
+    const url = taskId ? `${base}/tasks/${taskId}/events` : `${base}/tasks/events`
     const es = new EventSource(url)
 
-    es.onopen = () => set({ isConnected: true, eventSource: es })
+    es.onopen = () => {
+      if (get().eventSource === es) {
+        set({ isConnected: true, eventSource: es })
+      }
+    }
 
-    es.addEventListener('message', (e) => {
+    es.onmessage = (e) => {
       try {
         const event: ForgeEvent = JSON.parse(e.data)
         get().addEvent(event)
       } catch { /* ignore parse errors */ }
-    })
+    }
 
+    // Don't call es.close() on error — EventSource auto-reconnects.
+    // Only update state if this EventSource is still the current one,
+    // guarding against stale callbacks from a previously-disconnected ES.
     es.onerror = () => {
-      set({ isConnected: false })
-      es.close()
+      if (get().eventSource === es) {
+        set({ isConnected: false })
+      }
     }
   },
 
