@@ -12,8 +12,11 @@
  *  ├───────────────────────────────────────────────────────────┤
  *  │  StatusBar: Runtime | Task | Phase | EVI | Token          │
  *  └───────────────────────────────────────────────────────────┘
+ *
+ *  v0.2.1 — Real Runtime connection via REST + SSE.
+ *  Falls back to mock events when Runtime is unavailable.
  */
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useStore } from '../stores/runtime'
 import { TopBar } from '../components/TopBar'
 import { LeftSidebar } from '../components/LeftSidebar'
@@ -33,20 +36,45 @@ export function ForgeShell() {
   const [leftOpen, setLeftOpen] = useState(true)
   const [rightOpen, setRightOpen] = useState(true)
   const addEvent = useStore((s) => s.addEvent)
+  const connect = useStore((s) => s.connect)
+  const disconnect = useStore((s) => s.disconnect)
+  const isConnected = useStore((s) => s.isConnected)
 
-  // Phase 0.5: Mock event stream on first mount
-  useMockStream()
+  // Check Runtime availability on mount
+  const [runtimeAvail, setRuntimeAvail] = useState<boolean | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    import('../api/forge').then(({ getHealth }) => {
+      getHealth()
+        .then(() => {
+          if (!cancelled) setRuntimeAvail(true)
+        })
+        .catch(() => {
+          if (!cancelled) {
+            setRuntimeAvail(false)
+            // Runtime not available — show demo on welcome screen
+            useStore.setState({ events: [], tasks: [] })
+          }
+        })
+    })
+    return () => { cancelled = true }
+  }, [])
+
+  // Play mock demo ONLY when Runtime is confirmed unavailable
+  useMockStream(runtimeAvail === false)
 
   const handleSend = useCallback(
-    (message: string, mode: string) => {
+    async (message: string, mode: string) => {
       if (!message.trim()) return
 
       try {
-        // Stop mock, reset store
+        // Reset previous state
         abortMockStream()
-        useStore.setState({ events: [], tasks: [] })
+        disconnect()
+        useStore.setState({ events: [], tasks: [], selectedTaskId: null })
 
-        // Insert user message
+        // Always insert user message first (optimistic UI)
         addEvent({
           kind: 'user_message',
           task_id: uid(),
@@ -55,7 +83,16 @@ export function ForgeShell() {
           payload: { message, mode },
         })
 
-        // Start task
+        // Try real Runtime API
+        const { createTask } = await import('../api/forge')
+        const result = await createTask(message)
+
+        // Connect SSE for live event stream
+        connect(result.task_id)
+      } catch (e) {
+        console.warn('Runtime unavailable, using mock fallback:', e)
+
+        // Fallback: local mock task with user's actual goal
         const taskId = uid()
         addEvent({
           kind: 'task_started',
@@ -64,11 +101,9 @@ export function ForgeShell() {
           timestamp: new Date().toISOString(),
           payload: { goal: message, intent: mode, intent_confidence: 0.9 },
         })
-      } catch (e) {
-        console.error('handleSend error:', e)
       }
     },
-    [addEvent],
+    [addEvent, connect, disconnect],
   )
 
   return (

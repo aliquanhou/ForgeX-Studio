@@ -4,6 +4,7 @@ import { useStore } from '../stores/runtime'
 export function StatusBar() {
   const events = useStore((s) => s.events)
   const tasks = useStore((s) => s.tasks)
+  const isConnected = useStore((s) => s.isConnected)
 
   const activeTask = tasks.find((t) => t.isRunning)
   const lastEvi = [...events].reverse().find((e) => e.kind === 'evi_evaluated')
@@ -16,7 +17,11 @@ export function StatusBar() {
     ? ((lastPhaseChange.payload as Record<string, unknown>).to as string) ?? null
     : null
   const tokenEstimate = events.filter((e) => e.kind === 'tool_completed').length * 120
-  const hasActive = events.length > 0
+
+  // Determine runtime state
+  const hasSSE = events.length > 0 && isConnected
+  const hasMock = events.length > 0 && !isConnected
+  const isIdle = events.length === 0
 
   return (
     <footer className="flex items-center justify-between px-3 py-1 bg-surface-900 border-t text-2xs text-surface-500 shrink-0 h-6">
@@ -25,13 +30,24 @@ export function StatusBar() {
         <div className="flex items-center gap-1.5 shrink-0">
           <div
             className={`w-1.5 h-1.5 rounded-full ${
-              hasActive
+              hasSSE
                 ? 'bg-success animate-pulse shadow-[0_0_4px_rgba(34,197,94,0.5)]'
-                : 'bg-surface-600'
+                : hasMock
+                  ? 'bg-warning'
+                  : 'bg-surface-600'
             }`}
           />
-          <span>{hasActive ? 'Runtime在线' : 'Runtime空闲'}</span>
+          <span>
+            {hasSSE
+              ? 'Runtime在线'
+              : hasMock
+                ? '离线演示'
+                : 'Runtime空闲'}
+          </span>
         </div>
+
+        <span className="text-surface-700 shrink-0">|</span>
+        <span>事件: {events.length}</span>
 
         {activeTask && (
           <>

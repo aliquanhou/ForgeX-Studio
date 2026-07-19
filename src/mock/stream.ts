@@ -1,6 +1,11 @@
 /** Phase 0.5 -- Mock event stream hook.
  *  Pushes mock events into the runtime store with realistic delays.
- *  Call abortMockStream() to cancel playback (e.g. when user submits real task).
+ *  Call abortMockStream() to cancel playback.
+ *
+ *  Usage:
+ *    useMockStream()              // auto-start on mount (original behavior)
+ *    useMockStream(true)          // conditional: start when true
+ *    useMockStream(runtimeAvail === false)  // only when Runtime is unavailable
  */
 
 import { useEffect } from 'react'
@@ -13,10 +18,14 @@ export function abortMockStream() {
   _abort = true
 }
 
-export function useMockStream() {
+export function useMockStream(condition?: boolean) {
   const addEvent = useStore((s) => s.addEvent)
 
+  const shouldRun = condition === undefined ? true : condition
+
   useEffect(() => {
+    if (!shouldRun) return
+
     _abort = false
     // Reset store so each mount (incl. StrictMode remount) starts clean
     useStore.setState({ events: [], tasks: [] })
@@ -45,5 +54,5 @@ export function useMockStream() {
 
     run()
     return () => { cancelled = true }
-  }, [addEvent])
+  }, [addEvent, shouldRun])
 }
