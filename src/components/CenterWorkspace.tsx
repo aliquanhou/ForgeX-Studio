@@ -1,64 +1,18 @@
-/** Center workspace: Agent 认知渲染层 + User Input.
- *  瀑布流展示 Agent 工作过程，底部对齐输入栏。
- */
-import { useCallback } from 'react'
+/** Center workspace: 聊天流模式 — 消息按时间顺序排列，新消息自动滚动到底部。 */
 import { useStore } from '../stores/runtime'
-import { useInspectorStore } from '../stores/inspector'
-import { AgentStream, useCompressedStream } from '../agent-stream/AgentStream'
+import { ChatStream } from '../agent-stream/ChatStream'
 import { UserInput } from './UserInput'
-import type { AgentMessage, MessageType } from '../agent-stream/MessageTypes'
-import type { NarrativeBlock } from '../stream-compression/types'
 
 interface CenterWorkspaceProps {
   onSend: (message: string, mode: string) => void
 }
 
 export function CenterWorkspace({ onSend }: CenterWorkspaceProps) {
-  const items = useCompressedStream()
   const events = useStore((s) => s.events)
   const tasks = useStore((s) => s.tasks)
-  const openInspector = useInspectorStore((s) => s.openInspector)
-
-  const activeTask = tasks.find((t) => t.isRunning)
   const hasContent = events.length > 0
 
-  const handleSelect = useCallback(
-    (type: string, id: string) => {
-      const item = items.find((m) => m.id === id)
-      if (!item) return
-
-      if ('childIds' in item) {
-        const block = item as NarrativeBlock
-        const tabMap: Record<string, 'task' | 'decision' | 'world' | 'tools'> = {
-          tool_group: 'tools',
-          fact_group: 'world',
-          phase_summary: 'task',
-        }
-        openInspector({
-          type: type as any, id,
-          payload: block.meta,
-          tab: tabMap[block.type] || 'task',
-        })
-      } else {
-        const msg = item as AgentMessage
-        const tabMap: Record<string, 'task' | 'decision' | 'world' | 'tools'> = {
-          tool: 'tools',
-          decision: 'decision',
-          world_update: 'world',
-          artifact: 'world',
-          intent: 'decision',
-          plan: 'task',
-          completion: 'task',
-        }
-        openInspector({
-          type: type as any, id,
-          payload: msg.data,
-          tab: tabMap[msg.type] || 'task',
-        })
-      }
-    },
-    [items, openInspector],
-  )
+  const activeTask = tasks.find((t) => t.isRunning)
 
   /* ── Welcome empty state ────────────────────────────── */
   if (!hasContent) {
@@ -70,8 +24,8 @@ export function CenterWorkspace({ onSend }: CenterWorkspaceProps) {
               <span className="text-3xl">⚡</span>
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-surface-200 mb-1">ForgeX Studio</h2>
-              <p className="text-sm text-surface-500">AI Engineering Command Center</p>
+              <h2 className="text-lg font-semibold text-surface-200 mb-1">ForgeX 工作室</h2>
+              <p className="text-sm text-surface-500">AI 工程自主操作系统</p>
             </div>
             <div className="space-y-3">
               <p className="text-xs text-surface-500">输入任务开始，或试试以下示例：</p>
@@ -84,11 +38,6 @@ export function CenterWorkspace({ onSend }: CenterWorkspaceProps) {
                 ))}
               </div>
             </div>
-            <div className="flex items-center gap-4 text-2xs text-surface-700">
-              <span>Cmd+K 命令面板</span>
-              <span>Cmd+Enter 发送</span>
-              <span>Tab 切换面板</span>
-            </div>
           </div>
         </div>
         <UserInput onSend={onSend} />
@@ -96,17 +45,14 @@ export function CenterWorkspace({ onSend }: CenterWorkspaceProps) {
     )
   }
 
-  /* ── Agent Stream + UserInput ───────────────────────── */
+  /* ── Chat view with header + stream + input ─────────── */
   return (
     <div className="flex-1 flex flex-col overflow-hidden bg-surface-950">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-2 bg-surface-900/30 border-b border-surface-800 shrink-0">
         <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold text-surface-300">Agent Workspace</span>
-          <span className="text-2xs text-surface-600">
-            {items.length} 叙事节点
-            <span className="text-surface-700 ml-1">(原始 {events.length} 事件)</span>
-          </span>
+          <span className="text-xs font-semibold text-surface-300">对话</span>
+          <span className="text-2xs text-surface-600">{events.length} 事件</span>
         </div>
         {activeTask && (
           <div className="flex items-center gap-1.5">
@@ -116,10 +62,10 @@ export function CenterWorkspace({ onSend }: CenterWorkspaceProps) {
         )}
       </div>
 
-      {/* Waterfall stream — fills remaining space */}
-      <AgentStream items={items} onSelect={handleSelect} />
+      {/* Chat stream — scrollable, newest at bottom */}
+      <ChatStream />
 
-      {/* User input — only in center column */}
+      {/* Input always at bottom */}
       <UserInput onSend={onSend} />
     </div>
   )
