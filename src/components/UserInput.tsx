@@ -58,7 +58,7 @@ export function UserInput({ onSend }: UserInputProps) {
   }, [input, mode, onSend])
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+    if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       handleSend()
     }
