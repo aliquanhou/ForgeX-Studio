@@ -1,15 +1,46 @@
 /** Center workspace: Agent 认知渲染层。
  *  把 Runtime 事件流 → 转换成用户能理解的 Agent 工作过程。
  */
+import { useCallback } from 'react'
 import { useStore } from '../stores/runtime'
+import { useInspectorStore } from '../stores/inspector'
 import { AgentStream, useAgentStream } from '../agent-stream/AgentStream'
+import type { AgentMessage, MessageType } from '../agent-stream/MessageTypes'
 
 export function CenterWorkspace() {
   const messages = useAgentStream()
   const events = useStore((s) => s.events)
   const tasks = useStore((s) => s.tasks)
+  const openInspector = useInspectorStore((s) => s.openInspector)
 
   const activeTask = tasks.find((t) => t.isRunning)
+
+  /** 卡片点击 → 打开 Inspector 对应标签 */
+  const handleSelect = useCallback(
+    (type: MessageType, id: string) => {
+      // 从消息列表里找完整 payload
+      const msg = messages.find((m) => m.id === id)
+      if (!msg) return
+
+      const tabMap: Partial<Record<MessageType, 'task' | 'decision' | 'world' | 'memory' | 'tools' | 'plugins'>> = {
+        tool: 'tools',
+        decision: 'decision',
+        world_update: 'world',
+        artifact: 'world',
+        intent: 'decision',
+        plan: 'task',
+        completion: 'task',
+      }
+
+      openInspector({
+        type,
+        id,
+        payload: msg.data,
+        tab: tabMap[type] || 'task',
+      })
+    },
+    [messages, openInspector],
+  )
 
   /* ── Welcome empty state ────────────────────────────── */
   if (events.length === 0) {
@@ -71,7 +102,7 @@ export function CenterWorkspace() {
       </div>
 
       {/* Agent thought stream */}
-      <AgentStream messages={messages} />
+      <AgentStream messages={messages} onSelect={handleSelect} />
     </div>
   )
 }

@@ -24,9 +24,9 @@ export function EventRenderer({ message, isLatest, onSelect }: AgentMessageProps
     case 'decision':
       return <DecisionCard message={message} onSelect={onSelect} />
     case 'tool':
-      return <ToolCard message={message} />
+      return <ToolCard message={message} onSelect={onSelect} />
     case 'world_update':
-      return <WorldUpdateCard message={message} />
+      return <WorldUpdateCard message={message} onSelect={onSelect} />
     case 'artifact':
       return <ArtifactCard message={message} />
     case 'completion':
