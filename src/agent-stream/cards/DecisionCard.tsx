@@ -78,7 +78,7 @@ export function DecisionCard({ message, onSelect }: DecisionCardProps) {
       {(eviScore !== undefined || infoGain !== undefined || knowledgeCoverage !== undefined) && (
         <div className="flex flex-wrap gap-3 text-2xs text-surface-500">
           {eviScore !== undefined && (
-            <span>EVI: <span className="text-info font-mono">{eviScore.toFixed(2)}</span></span>
+            <span>评估值: <span className="text-info font-mono">{eviScore.toFixed(2)}</span></span>
           )}
           {infoGain !== undefined && (
             <span>Δ信息: <span className="text-info font-mono">{infoGain.toFixed(2)}</span></span>

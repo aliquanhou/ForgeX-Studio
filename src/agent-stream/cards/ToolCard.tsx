@@ -52,7 +52,7 @@ export function ToolCard({ message }: AgentMessageProps) {
       {/* EVI 指标 */}
       {eviScore !== undefined && !isRunning && (
         <div className="text-2xs text-surface-500 mt-1">
-          EVI: <span className="text-info font-mono">{eviScore.toFixed(2)}</span>
+          评估值: <span className="text-info font-mono">{eviScore.toFixed(2)}</span>
         </div>
       )}
     </div>

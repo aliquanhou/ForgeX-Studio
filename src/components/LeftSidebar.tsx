@@ -110,7 +110,7 @@ export function LeftSidebar({ collapsed }: LeftSidebarProps) {
 
       {/* ── Bottom status ─────────────────────────── */}
       <div className="px-3 py-2 border-t border-surface-800 text-2xs text-surface-600">
-        Runtime v0.5 · Mode: Mock
+        Runtime v0.5 · 离线模式
       </div>
     </aside>
   )

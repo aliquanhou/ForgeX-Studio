@@ -46,6 +46,18 @@ function PhaseHeader({ message }: { message: AgentMessageProps['message'] }) {
   const to = (message.data.to as string) || ''
   const from = (message.data.from as string) || ''
 
+  const phaseLabels: Record<string, string> = {
+    planning: '规划中',
+    exploration: '探索中',
+    implementation: '执行中',
+    verification: '验证中',
+    finalizing: '收尾中',
+    completed: '已完成',
+    failed: '已失败',
+    cancelled: '已取消',
+    init: '初始化',
+  }
+
   const phaseColors: Record<string, string> = {
     planning: 'border-info/30 text-info',
     exploration: 'border-warning/30 text-warning',
@@ -72,8 +84,8 @@ function PhaseHeader({ message }: { message: AgentMessageProps['message'] }) {
       <div className="flex-1 h-px bg-surface-800" />
       <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full border text-2xs font-semibold ${color}`}>
         <span>{icon}</span>
-        <span>{to.toUpperCase()}</span>
-        {from && <span className="opacity-50">(from {from})</span>}
+        <span>{phaseLabels[to] || to}</span>
+        {from && <span className="opacity-50">({phaseLabels[from] || from})</span>}
       </div>
       <div className="flex-1 h-px bg-surface-800" />
     </div>

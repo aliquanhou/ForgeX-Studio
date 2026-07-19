@@ -75,11 +75,11 @@ export function StatusBar() {
       <div className="flex items-center gap-3 shrink-0">
         {eviScore !== null && (
           <span>
-            EVI: <span className="text-info font-mono">{eviScore.toFixed(2)}</span>
+            评估值: <span className="text-info font-mono">{eviScore.toFixed(2)}</span>
           </span>
         )}
         <span>
-          Token: <span className="text-surface-300 font-mono">~{tokenEstimate}</span>
+          消耗: <span className="text-surface-300 font-mono">~{tokenEstimate}</span>
         </span>
         <span className="text-surface-600">v0.2</span>
       </div>

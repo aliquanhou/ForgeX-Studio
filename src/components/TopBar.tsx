@@ -23,9 +23,9 @@ export function TopBar({ leftOpen, rightOpen, onToggleLeft, onToggleRight }: Top
   const hasControl = paused || humanOverride
 
   const modeLabel: Record<string, string> = {
-    autonomous: '🟢 Autonomous',
-    observe: '🟡 Observe',
-    governed: '🔴 Governed',
+    autonomous: '🟢 自主',
+    observe: '🟡 观察',
+    governed: '🔴 治理',
   }
 
   return (
@@ -41,7 +41,7 @@ export function TopBar({ leftOpen, rightOpen, onToggleLeft, onToggleRight }: Top
                 ? 'bg-accent-600/20 text-accent-400'
                 : 'text-surface-500 hover:text-surface-300 hover:bg-surface-800'
             }`}
-            title={leftOpen ? 'Close sidebar' : 'Open sidebar'}
+            title={leftOpen ? '收起侧栏' : '展开侧栏'}
           >
             <SidebarIcon />
           </button>
@@ -49,7 +49,7 @@ export function TopBar({ leftOpen, rightOpen, onToggleLeft, onToggleRight }: Top
           <div className="w-5 h-5 rounded bg-accent-600 flex items-center justify-center text-[10px] font-bold text-white">
             F
           </div>
-          <span className="text-sm font-semibold text-surface-100">ForgeX Studio</span>
+          <span className="text-sm font-semibold text-surface-100">ForgeX 工作室</span>
           <span className="text-2xs text-surface-500">v0.3</span>
 
           <div className="h-4 w-px bg-surface-700 mx-1" />
@@ -88,7 +88,7 @@ export function TopBar({ leftOpen, rightOpen, onToggleLeft, onToggleRight }: Top
           )}
 
           {activeTasks > 0 && (
-            <span className="text-2xs text-surface-500">{activeTasks} 任务</span>
+            <span className="text-2xs text-surface-500">{activeTasks} 个运行中</span>
           )}
 
           <div className="h-4 w-px bg-surface-700" />

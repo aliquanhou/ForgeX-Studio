@@ -111,7 +111,7 @@ export function CenterWorkspace({ onSend }: CenterWorkspaceProps) {
         {activeTask && (
           <div className="flex items-center gap-1.5">
             <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
-            <span className="text-2xs text-surface-500">Running</span>
+            <span className="text-2xs text-surface-500">运行中</span>
           </div>
         )}
       </div>
